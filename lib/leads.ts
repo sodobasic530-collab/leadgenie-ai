@@ -6,6 +6,7 @@ export type Lead = {
   company: string;
   email: string;
   created_at: string;
+  sent_at: string | null;
 };
 
 export type AddLeadInput = {
@@ -43,6 +44,31 @@ export async function addLead(input: AddLeadInput): Promise<AddLeadResult> {
   }
 
   return { ok: true, lead: data as Lead };
+}
+
+export async function getLeadById(id: string): Promise<Lead | null> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select()
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data as Lead | null;
+}
+
+export async function markLeadSent(id: string): Promise<Lead> {
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ sent_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data as Lead;
 }
 
 export async function listLeads(): Promise<Lead[]> {
