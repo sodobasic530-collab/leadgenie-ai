@@ -11,6 +11,37 @@ export type DraftEmailResult =
 
 const TIMEOUT_MS = 15000;
 
+const SYSTEM_PROMPT = `You write short cold emails that read like a real person typed them.
+
+Rules:
+- Open with something specific to this person or company, taken from the notes or role. Never open with a compliment or "I hope this finds you well".
+- If there are no notes, open with a plain, relevant observation about their role. Do not invent facts about the company.
+- One clear reason to reply, then one low-pressure question. No calendar links, no "quick call".
+- Plain words. No buzzwords (leverage, synergy, streamline, game-changer, unlock, revolutionize, cutting-edge, seamless).
+- Never use em dashes or en dashes. Use commas or full stops.
+- Body: 60 to 110 words, 2 or 3 short paragraphs, greet them by first name, sign off with just "Best,".
+- Subject: under 7 words, lowercase except names, no clickbait, no exclamation marks.
+
+Respond with strict JSON only: {"subject": string, "body": string}.`;
+
+function buildUserPrompt(lead: Lead): string {
+  const lines = [
+    "Write a cold email introducing LeadGenie AI, a tool that helps small sales teams keep track of leads and send personal first emails faster.",
+    "",
+    "Lead:",
+    `Name: ${lead.name}`,
+    `Company: ${lead.company}`,
+  ];
+  if (lead.role) lines.push(`Role: ${lead.role}`);
+  if (lead.notes) lines.push(`Notes about them: ${lead.notes}`);
+  return lines.join("\n");
+}
+
+// Removes dashes the model sometimes slips in anyway
+function tidy(text: string): string {
+  return text.replace(/\s*[—–]\s*/g, ", ").trim();
+}
+
 export async function draftColdEmail(lead: Lead): Promise<DraftEmailResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -25,15 +56,8 @@ export async function draftColdEmail(lead: Lead): Promise<DraftEmailResult> {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          {
-            role: "system",
-            content:
-              "You write short, natural, non-salesy cold emails. No generic filler like 'I hope this email finds you well.' Sound like a real person, not a template. Keep the body under 120 words. Respond with strict JSON only: {\"subject\": string, \"body\": string}.",
-          },
-          {
-            role: "user",
-            content: `Write a cold email introducing LeadGenie AI, an AI-powered lead management tool, to this lead:\nName: ${lead.name}\nCompany: ${lead.company}\nEmail: ${lead.email}`,
-          },
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: buildUserPrompt(lead) },
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
@@ -57,7 +81,10 @@ export async function draftColdEmail(lead: Lead): Promise<DraftEmailResult> {
       return { ok: false, error: "openai_error" };
     }
 
-    return { ok: true, draft: { subject: parsed.subject, body: parsed.body } };
+    return {
+      ok: true,
+      draft: { subject: tidy(String(parsed.subject)), body: tidy(String(parsed.body)) },
+    };
   } catch (err) {
     clearTimeout(timeout);
     if (err instanceof Error && err.name === "AbortError") {

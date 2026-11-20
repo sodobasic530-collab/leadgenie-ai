@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeadById, markLeadSent } from "@/lib/leads";
 import { sendEmail } from "@/lib/resend";
-import { getUserFromRequest } from "@/lib/auth";
+import { getUserFromRequest, isDemoUser } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
@@ -12,26 +12,35 @@ export async function POST(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const lead = await getLeadById(params.id);
+  if (isDemoUser(user)) {
+    return NextResponse.json({ error: "demo_cannot_send" }, { status: 403 });
+  }
+
+  const lead = await getLeadById(user.id, params.id);
   if (!lead) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const body = await req.json();
-  const subject = body.subject?.trim();
-  const emailBody = body.body?.trim();
-
-  if (!subject || !emailBody) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (lead.sent_at) {
+    return NextResponse.json({ error: "already_sent" }, { status: 409 });
   }
 
-  const result = await sendEmail({ to: lead.email, subject, body: emailBody });
+  // Only the draft stored on the server can be sent, never text from the browser
+  if (!lead.draft_subject || !lead.draft_body) {
+    return NextResponse.json({ error: "no_draft" }, { status: 400 });
+  }
+
+  const result = await sendEmail({
+    to: lead.email,
+    subject: lead.draft_subject,
+    body: lead.draft_body,
+  });
 
   if (!result.ok) {
     const status = result.error === "timeout" ? 504 : 502;
     return NextResponse.json({ error: result.error }, { status });
   }
 
-  const updatedLead = await markLeadSent(lead.id);
+  const updatedLead = await markLeadSent(user.id, lead.id);
   return NextResponse.json(updatedLead);
 }

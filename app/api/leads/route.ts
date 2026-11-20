@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addLead, listLeads } from "@/lib/leads";
-import { getUserFromRequest } from "@/lib/auth";
+import { getUserFromRequest, isDemoUser } from "@/lib/auth";
+import { dailyDraftLimit, draftsUsedToday } from "@/lib/usage";
 
 export async function GET(req: NextRequest) {
   const user = await getUserFromRequest(req);
@@ -8,8 +9,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const leads = await listLeads();
-  return NextResponse.json(leads);
+  const [leads, used] = await Promise.all([
+    listLeads(user.id),
+    draftsUsedToday(user.id),
+  ]);
+
+  return NextResponse.json({
+    leads,
+    me: {
+      email: user.email,
+      isDemo: isDemoUser(user),
+      draftsUsed: used,
+      draftLimit: dailyDraftLimit(),
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -18,8 +31,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const result = await addLead(body);
+  const body = await req.json().catch(() => ({}));
+  const result = await addLead(user.id, body);
 
   if (!result.ok) {
     const status = result.error === "duplicate" ? 409 : 400;
