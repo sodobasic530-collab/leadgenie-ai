@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Mail, Lock } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo";
 
 const inputClass =
-  "rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,17 +58,24 @@ export default function LoginPage() {
         LeadGenie AI
       </Link>
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-xl font-semibold text-gray-900">Log in</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Welcome back</h1>
+        <p className="mb-6 mt-1 text-sm text-gray-500">Log in to get back to your leads.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
-            <input id="email" type="email" autoComplete="email" placeholder="you@company.com"
-              value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input id="email" type="email" autoComplete="email" placeholder="you@company.com"
+                value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
+            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
-            <input id="password" type="password" autoComplete="current-password" placeholder="••••••••"
-              value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} required />
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input id="password" type="password" autoComplete="current-password" placeholder="••••••••"
+                value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} required />
+            </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button type="submit" disabled={loading}

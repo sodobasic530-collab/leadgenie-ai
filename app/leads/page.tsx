@@ -38,6 +38,20 @@ const STATUS_STYLE = {
   sent: "bg-green-50 text-green-800 ring-1 ring-green-200",
 };
 
+const AVATAR_STYLES = [
+  "bg-indigo-50 text-indigo-700",
+  "bg-rose-50 text-rose-700",
+  "bg-emerald-50 text-emerald-700",
+  "bg-amber-50 text-amber-700",
+  "bg-sky-50 text-sky-700",
+  "bg-violet-50 text-violet-700",
+];
+
+function avatarStyle(name: string) {
+  const code = name.trim().charCodeAt(0) || 0;
+  return AVATAR_STYLES[code % AVATAR_STYLES.length];
+}
+
 const ERROR_TEXT: Record<string, string> = {
   duplicate: "You already have a lead with that email.",
   invalid: "Please fill in name, company and a valid email.",
@@ -419,14 +433,25 @@ export default function LeadsPage() {
                   const draftOpen = openDraft === lead.id && !!lead.draft_subject;
                   const editingDraft = draftEdit?.id === lead.id ? draftEdit : null;
 
+                  const actionsVisible = !!action || !!editing || confirmDelete === lead.id;
+
                   return (
                     <Fragment key={lead.id}>
-                      <tr className="border-b border-gray-100 align-top last:border-0 hover:bg-gray-50/60">
+                      <tr className="group border-b border-gray-100 align-top last:border-0 hover:bg-gray-50/60">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-900">{lead.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {[lead.role, lead.company].filter(Boolean).join(" at ")}
-                          </p>
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarStyle(lead.name)}`}
+                            >
+                              {lead.name.trim().charAt(0).toUpperCase() || "?"}
+                            </span>
+                            <div>
+                              <p className="font-medium text-gray-900">{lead.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {[lead.role, lead.company].filter(Boolean).join(" at ")}
+                              </p>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-700">{lead.email}</td>
                         <td className="px-4 py-3">
@@ -440,7 +465,11 @@ export default function LeadsPage() {
                           {new Date(lead.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap justify-end gap-2">
+                          <div
+                            className={`flex flex-wrap justify-end gap-2 transition-opacity ${
+                              actionsVisible ? "opacity-100" : "opacity-0 focus-within:opacity-100 group-hover:opacity-100"
+                            }`}
+                          >
                             {status === "new" && (
                               <SmallButton primary onClick={() => handleDraft(lead)}
                                 disabled={!!action || limitReached}>
