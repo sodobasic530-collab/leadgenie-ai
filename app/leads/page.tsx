@@ -71,6 +71,7 @@ export default function LeadsPage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [me, setMe] = useState<Me | null>(null);
   const [form, setForm] = useState<LeadForm>(EMPTY_FORM);
   const [showMore, setShowMore] = useState(false);
@@ -117,6 +118,7 @@ export default function LeadsPage() {
       setLeads(data.leads);
       setMe(data.me);
     }
+    setLeadsLoaded(true);
   }
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function LeadsPage() {
         return;
       }
       setCheckingAuth(false);
-      await loadLeads().catch(() => {});
+      await loadLeads().catch(() => setLeadsLoaded(true));
     }
     checkAuthAndLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -351,7 +353,7 @@ export default function LeadsPage() {
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
               <p className="text-xs font-medium text-gray-500">{label}</p>
-              <p className="mt-1 text-xl font-semibold text-gray-900">{value}</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">{leadsLoaded ? value : "…"}</p>
             </div>
           ))}
         </div>
@@ -405,7 +407,13 @@ export default function LeadsPage() {
           {formError && <p className="mt-3 text-sm text-red-600">{formError}</p>}
         </form>
 
-        {leads.length === 0 ? (
+        {!leadsLoaded ? (
+          <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm" aria-busy="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-12 animate-pulse rounded-md bg-gray-100" />
+            ))}
+          </div>
+        ) : leads.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
             <p className="text-base font-medium text-gray-900">No leads yet</p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-gray-500">
@@ -465,11 +473,7 @@ export default function LeadsPage() {
                           {new Date(lead.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <div
-                            className={`flex flex-wrap justify-end gap-2 transition-opacity ${
-                              actionsVisible ? "opacity-100" : "opacity-0 focus-within:opacity-100 group-hover:opacity-100"
-                            }`}
-                          >
+                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                             {status === "new" && (
                               <SmallButton primary onClick={() => handleDraft(lead)}
                                 disabled={!!action || limitReached}>
@@ -487,6 +491,13 @@ export default function LeadsPage() {
                                 {draftOpen ? "Hide email" : "View email"}
                               </SmallButton>
                             )}
+                            <div
+                              className={`flex items-center gap-2 transition-opacity ${
+                                actionsVisible
+                                  ? "opacity-100"
+                                  : "opacity-0 focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                              }`}
+                            >
                             {!editing && (
                               <SmallButton disabled={!!action}
                                 onClick={() => {
@@ -517,6 +528,7 @@ export default function LeadsPage() {
                                 Delete
                               </SmallButton>
                             )}
+                            </div>
                           </div>
                         </td>
                       </tr>
