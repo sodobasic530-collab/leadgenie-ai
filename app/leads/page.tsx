@@ -12,6 +12,7 @@ type Me = {
   isDemo: boolean;
   draftsUsed: number;
   draftLimit: number;
+  offer: string | null;
 };
 
 type LeadForm = {
@@ -62,6 +63,8 @@ const ERROR_TEXT: Record<string, string> = {
   no_draft: "Generate a draft first.",
   already_sent: "This email was already sent.",
   not_found: "This lead no longer exists. Refresh the page.",
+  no_offer: "Add what you sell at the top first, so the AI knows what to pitch.",
+  demo_cannot_edit_offer: "The demo account's offer can't be changed. Create your own account to set yours.",
 };
 
 function errorText(code: string | undefined, fallback: string) {
@@ -85,6 +88,10 @@ export default function LeadsPage() {
   const [draftEdit, setDraftEdit] = useState<{ id: string; subject: string; body: string } | null>(null);
   const [leadEdit, setLeadEdit] = useState<{ id: string; form: LeadForm } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [offerText, setOfferText] = useState("");
+  const [editingOffer, setEditingOffer] = useState(false);
+  const [offerSaving, setOfferSaving] = useState(false);
+  const [offerError, setOfferError] = useState<string | null>(null);
 
   async function getToken() {
     const { data } = await supabaseBrowser.auth.getSession();
@@ -118,6 +125,8 @@ export default function LeadsPage() {
       const data = await res.json();
       setLeads(data.leads);
       setMe(data.me);
+      setOfferText(data.me?.offer ?? "");
+      setEditingOffer(!data.me?.offer && !data.me?.isDemo);
     }
     setLeadsLoaded(true);
   }
@@ -151,6 +160,30 @@ export default function LeadsPage() {
       else delete next[id];
       return next;
     });
+  }
+
+  async function handleSaveOffer(e: React.FormEvent) {
+    e.preventDefault();
+    setOfferSaving(true);
+    setOfferError(null);
+    try {
+      const res = await api("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ offer: offerText }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOfferError(errorText(data.error, "Could not save. Try again."));
+        return;
+      }
+      if (me) setMe({ ...me, offer: data.offer });
+      setOfferText(data.offer ?? "");
+      setEditingOffer(!data.offer);
+    } catch {
+      /* redirected */
+    } finally {
+      setOfferSaving(false);
+    }
   }
 
   async function handleLogout() {
@@ -358,6 +391,73 @@ export default function LeadsPage() {
             </div>
           ))}
         </div>
+
+        {me && (
+          <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-semibold text-gray-900">What you sell</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  The AI pitches this in every draft. One or two sentences is enough.
+                </p>
+                {!editingOffer && (
+                  <p className="mt-2 text-sm text-gray-800">
+                    {me.offer || <span className="text-gray-400">Not set yet</span>}
+                  </p>
+                )}
+              </div>
+              {!editingOffer && !me.isDemo && (
+                <button
+                  type="button"
+                  onClick={() => setEditingOffer(true)}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {me.isDemo && (
+              <p className="mt-2 text-xs text-gray-500">
+                Fixed for the shared demo. In your own account you describe your own product here.
+              </p>
+            )}
+            {editingOffer && !me.isDemo && (
+              <form onSubmit={handleSaveOffer} className="mt-3 space-y-2">
+                <textarea
+                  className={`${inputClass} min-h-[72px]`}
+                  maxLength={500}
+                  placeholder="Bookkeeping for small restaurants, so owners stop losing weekends to receipts."
+                  value={offerText}
+                  onChange={(e) => setOfferText(e.target.value)}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={offerSaving || !offerText.trim()}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    {offerSaving ? "Saving..." : "Save"}
+                  </button>
+                  {me.offer && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOfferText(me.offer ?? "");
+                        setEditingOffer(false);
+                        setOfferError(null);
+                      }}
+                      className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <span className="text-xs text-gray-400">{offerText.length}/500</span>
+                </div>
+                {offerError && <p className="text-sm text-red-600">{offerError}</p>}
+              </form>
+            )}
+          </section>
+        )}
 
         <form
           onSubmit={handleSubmit}

@@ -24,9 +24,12 @@ Rules:
 
 Respond with strict JSON only: {"subject": string, "body": string}.`;
 
-function buildUserPrompt(lead: Lead): string {
+function buildUserPrompt(lead: Lead, offer: string): string {
   const lines = [
-    "Write a cold email introducing LeadGenie AI, a tool that helps small sales teams keep track of leads and send personal first emails faster.",
+    "Write a cold email from the sender to this lead.",
+    "",
+    `What the sender sells: ${offer}`,
+    "Only connect the offer to the lead where it honestly fits. Do not invent problems or facts.",
     "",
     "Lead:",
     `Name: ${lead.name}`,
@@ -42,7 +45,7 @@ function tidy(text: string): string {
   return text.replace(/\s*[—–]\s*/g, ", ").trim();
 }
 
-export async function draftColdEmail(lead: Lead): Promise<DraftEmailResult> {
+export async function draftColdEmail(lead: Lead, offer: string): Promise<DraftEmailResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -57,7 +60,7 @@ export async function draftColdEmail(lead: Lead): Promise<DraftEmailResult> {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserPrompt(lead) },
+          { role: "user", content: buildUserPrompt(lead, offer) },
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,

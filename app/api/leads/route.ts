@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { addLead, listLeads } from "@/lib/leads";
 import { getUserFromRequest, isDemoUser } from "@/lib/auth";
 import { dailyDraftLimit, draftsUsedToday } from "@/lib/usage";
+import { getOffer } from "@/lib/settings";
 
 export async function GET(req: NextRequest) {
   const user = await getUserFromRequest(req);
@@ -9,9 +10,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const [leads, used] = await Promise.all([
+  const [leads, used, offer] = await Promise.all([
     listLeads(user.id),
     draftsUsedToday(user.id),
+    getOffer(user.id),
   ]);
 
   return NextResponse.json({
@@ -21,6 +23,7 @@ export async function GET(req: NextRequest) {
       isDemo: isDemoUser(user),
       draftsUsed: used,
       draftLimit: dailyDraftLimit(),
+      offer,
     },
   });
 }

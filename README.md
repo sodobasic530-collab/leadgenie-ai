@@ -9,7 +9,8 @@ The demo login is on the homepage. Sending is turned off for the shared demo acc
 
 - **Lead capture with duplicate protection.** Add a lead by name, company and email, plus an optional role and notes. Duplicate emails are rejected by a database constraint, per user.
 - **Private data per account.** Every lead belongs to the user who added it. All queries are scoped to the logged-in user on the server.
-- **AI-drafted first emails.** One click writes a subject and body with OpenAI, using the lead's role and notes. Drafts are stored on the lead, survive a reload, and can be edited.
+- **Your own offer.** Each account saves a short "what you sell" description once, and every AI draft pitches that, not a fixed product. The shared demo account has a fixed offer that visitors can't change.
+- **AI-drafted first emails.** One click writes a subject and body with OpenAI, using your offer plus the lead's role and notes. Drafts are stored on the lead, survive a reload, and can be edited.
 - **Real sending, from the stored draft only.** Send uses the draft saved in the database, never text sent from the browser. The lead is marked sent, so it can't go out twice.
 - **Cost guard.** Each account has a daily AI draft limit (default 20, set with `DAILY_DRAFT_LIMIT`).
 - **Dashboard.** Status per lead (new, drafted, sent), edit, delete, counts, log out.

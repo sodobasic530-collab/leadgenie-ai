@@ -8,7 +8,7 @@ const STEPS = [
   },
   {
     title: "Get an AI draft",
-    text: "One click writes a short first email built around what you know about that person. Edit it if you want.",
+    text: "Tell it once what you sell. Then one click writes a short first email built around what you know about that person. Edit it if you want.",
   },
   {
     title: "Send and track",
@@ -17,7 +17,7 @@ const STEPS = [
 ];
 
 const PREVIEW_ROWS = [
-  { name: "Ava Thornton", company: "Nimbus Robotics", status: "sent" },
+  { name: "Ava Thornton", company: "Nimbus Robotics", status: "drafted" },
   { name: "Priya Anand", company: "Fernbank Logistics", status: "drafted" },
   { name: "Marcus Feld", company: "BrightWave Media", status: "new" },
 ];

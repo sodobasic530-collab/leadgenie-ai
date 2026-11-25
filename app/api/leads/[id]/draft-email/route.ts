@@ -3,6 +3,7 @@ import { getLeadById, saveDraft } from "@/lib/leads";
 import { draftColdEmail } from "@/lib/openai";
 import { getUserFromRequest } from "@/lib/auth";
 import { dailyDraftLimit, draftsUsedToday, recordDraft } from "@/lib/usage";
+import { getOffer } from "@/lib/settings";
 
 export async function POST(
   req: NextRequest,
@@ -22,6 +23,11 @@ export async function POST(
     return NextResponse.json({ error: "already_sent" }, { status: 409 });
   }
 
+  const offer = await getOffer(user.id);
+  if (!offer) {
+    return NextResponse.json({ error: "no_offer" }, { status: 400 });
+  }
+
   const limit = dailyDraftLimit();
   const used = await draftsUsedToday(user.id);
   if (used >= limit) {
@@ -30,7 +36,7 @@ export async function POST(
 
   await recordDraft(user.id);
 
-  const result = await draftColdEmail(lead);
+  const result = await draftColdEmail(lead, offer);
 
   if (!result.ok) {
     const status = result.error === "timeout" ? 504 : 502;
