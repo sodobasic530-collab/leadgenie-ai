@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pencil, Trash2 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Lead } from "@/lib/leads";
 
@@ -454,7 +455,7 @@ export default function LeadsPage() {
                               {lead.name.trim().charAt(0).toUpperCase() || "?"}
                             </span>
                             <div>
-                              <p className="font-medium text-gray-900">{lead.name}</p>
+                              <p className="whitespace-nowrap font-medium text-gray-900">{lead.name}</p>
                               <p className="text-xs text-gray-500">
                                 {[lead.role, lead.company].filter(Boolean).join(" at ")}
                               </p>
@@ -499,7 +500,7 @@ export default function LeadsPage() {
                               }`}
                             >
                             {!editing && (
-                              <SmallButton disabled={!!action}
+                              <SmallButton icon label="Edit lead" disabled={!!action}
                                 onClick={() => {
                                   setConfirmDelete(null);
                                   setLeadEdit({
@@ -513,7 +514,7 @@ export default function LeadsPage() {
                                     },
                                   });
                                 }}>
-                                Edit
+                                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                               </SmallButton>
                             )}
                             {confirmDelete === lead.id ? (
@@ -524,8 +525,8 @@ export default function LeadsPage() {
                                 <SmallButton onClick={() => setConfirmDelete(null)}>Cancel</SmallButton>
                               </>
                             ) : (
-                              <SmallButton disabled={!!action} onClick={() => setConfirmDelete(lead.id)}>
-                                Delete
+                              <SmallButton icon label="Delete lead" disabled={!!action} onClick={() => setConfirmDelete(lead.id)}>
+                                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                               </SmallButton>
                             )}
                             </div>
@@ -653,12 +654,16 @@ function SmallButton({
   disabled,
   primary,
   danger,
+  icon,
+  label,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
   primary?: boolean;
   danger?: boolean;
+  icon?: boolean;
+  label?: string;
 }) {
   const style = danger
     ? "bg-red-600 text-white hover:bg-red-500"
@@ -670,7 +675,9 @@ function SmallButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${style}`}
+      aria-label={label}
+      title={label}
+      className={`rounded-md ${icon ? "p-1.5" : "px-3 py-1.5"} text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${style}`}
     >
       {children}
     </button>
